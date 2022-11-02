@@ -34,6 +34,62 @@ def extract_from_edf(file_path, **kwargs):
         base_edf = BaseEDFReader(in_f)
         base_edf.read_header()
         ann = tuple(zip(*tuple(base_edf.records())[0][-1]))
+        if len(ann) <= 10:
+            # Use pyedflib instead
+            import pyedflib
+            from psg_utils.hypnogram.utils import hyp_has_gaps
+            import datetime
+            ann_f = pyedflib.EdfReader(file_path)
+            ann = ann_f.readAnnotations()
+
+            # Skip invalid
+            ann_onsets = []
+            ann_durs = []
+            ann_stages = []
+            _onsets, _durs, _stages = ann
+            
+            epoch_duration = -1
+            epoch_sample = -1
+            total_duration = 0
+            for a in range(len(_onsets)):
+                _onset_sec = np.round(_onsets[a])
+                _duration_sec = np.round(_durs[a])
+                ann_str = str(_stages[a])
+                
+                if "<Event channel" not in ann_str:
+                    # Check epoch duration
+                    mismatch_duration = False
+                    if epoch_duration == -1:
+                        epoch_duration = _duration_sec
+                    elif epoch_duration != _duration_sec:
+                        mismatch_duration = True
+                        # print(f"Mismatch duration: epoch: {epoch_duration} s, ann_duration: {duration_sec} s")
+
+                    if not mismatch_duration:
+                        assert epoch_duration == _duration_sec
+                        ann_onsets.append(_onset_sec)
+                        ann_durs.append(_duration_sec)
+                        ann_stages.append(ann_str)
+
+            for a in range(len(ann_onsets)):
+                _onset = ann_onsets[a]
+                _dur = ann_durs[a]
+                _stage = ann_stages[a]
+
+                # Print output
+                if a > 0 and a < len(ann_onsets) - 1 and _onset - ann_onsets[a-1] < 30:
+                    print((
+                        f"{_stage}: on={_onset:.3f}, dur={_dur}"
+                        f", diff_onset={_onset - ann_onsets[a-1]}"
+                    ))
+                    if ann_onsets[a+1] - _onset > 30:
+                        print(f" Resolve onset issue from {ann_onsets[a]} to {ann_onsets[a]+1}")
+                        ann_onsets[a] += 1
+                    else:
+                        print(" Cannot resolve onset issue ****")
+
+            # Combine the results
+            ann = (ann_onsets, ann_durs, ann_stages)
     return StartDurationStageFormat(ann)
 
 

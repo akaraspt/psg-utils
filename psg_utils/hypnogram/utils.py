@@ -350,6 +350,9 @@ def hyp_has_gaps(inits, durations):
     if len(durations) == len(inits):
         durations = durations[:-1]
     actual_diffs = np.diff(inits)
+    for _diff, _dur, _flag in zip(actual_diffs, durations, np.isclose(actual_diffs, durations)):
+        if not _flag:
+            print(_diff, _dur, _flag)
     return np.any(~np.isclose(actual_diffs, durations))
 
 
@@ -383,9 +386,25 @@ def fill_hyp_gaps(inits, durations, stages, fill_value):
                                       "of this situation. Please raise an issue on GitHub.")
         # Insert gap section
         length = gap_lengths[ind]
-        inits.insert(ind + 1 + insert_idx, inits[ind + insert_idx] + durations[ind + insert_idx])
-        durations.insert(ind + 1 + insert_idx, length)
+        inits.insert(ind+1+insert_idx, inits[ind+insert_idx] + durations[ind+insert_idx])
+        durations.insert(ind+1+insert_idx, length)
         stages.insert(ind+1+insert_idx, fill_value)
+        # print(f'Init: insert at {ind + 1 + insert_idx} with {inits[ind+insert_idx]+durations[ind+insert_idx]}')
+        # print(inits[ind+insert_idx:ind+insert_idx+3])
+        # print(f'Dur: insert at {ind + 1 + insert_idx} with {length}')
+        # print(durations[ind+insert_idx:ind+insert_idx+3])
+        # print(f'Stage: insert at {ind + 1 + insert_idx} with {fill_value}')
+        # print(stages[ind+insert_idx:ind+insert_idx+3])
+        # if length == -1:
+        #     inits[ind + 1 + insert_idx] += 1
+        # else:
+        #     inits.insert(ind+1+insert_idx, inits[ind+insert_idx] + durations[ind+insert_idx])
+        #     durations.insert(ind+1+insert_idx, length)
+        #     stages.insert(ind+1+insert_idx, fill_value)
+        # print('After==')
+        # print(inits[ind+insert_idx:ind+insert_idx+3], np.diff(inits[ind+insert_idx:ind+insert_idx+3]))
+        # print(durations[ind+insert_idx:ind+insert_idx+3])
+        # print(stages[ind+insert_idx:ind+insert_idx+3])
     return tuple(map(tuple, (inits, durations, stages)))
 
 

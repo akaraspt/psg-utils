@@ -111,6 +111,8 @@ class SparseHypnogram(object):
 
         # Check sorted init times
         if np.any(np.diff(self.inits) < 0):
+            print(self.inits)
+            print(np.diff(self.inits))
             raise ValueError("Array of init times must be sorted.")
         # Check init times and durations match
         from psg_utils.hypnogram.utils import hyp_has_gaps
